@@ -1,0 +1,342 @@
+<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php
+
+$v = "";
+
+if ($this->input->post('start_date')) {
+    $v .= "&start_date=" . $this->input->post('start_date');
+}
+if ($this->input->post('end_date')) {
+    $v .= "&end_date=" . $this->input->post('end_date');
+}
+
+?>
+<script type="text/javascript">
+        var code = "";
+        $.ajax({
+            type: 'GET',
+            url: '<?php echo base_url() ?>admin/code/getCode',
+            success: function (response) {
+                codes = response.message[0].generate_code;
+                console.log(response);
+            }
+        });
+    </script>
+<script>
+    $(document).ready(function () {
+        $('#form').hide();
+        $('.toggle_down').click(function () {
+            $("#form").slideDown();
+            return false;
+        });
+        $('.toggle_up').click(function () {
+            $("#form").slideUp();
+            return false;
+        });
+        oTable = $('#POSData').dataTable({
+            "aaSorting": [[1, "desc"], [2, "desc"]],
+            "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "<?= lang('all') ?>"]],
+            "iDisplayLength": <?= $Settings->rows_per_page ?>,
+            'bProcessing': true, 'bServerSide': true,
+            'sAjaxSource': '<?= admin_url('pos/getSales'.($warehouse_id ? '/'.$warehouse_id : '').'?v=1'.$v) ?>',
+            'fnServerData': function (sSource, aoData, fnCallback) {
+                aoData.push({
+                    "name": "<?= $this->security->get_csrf_token_name() ?>",
+                    "value": "<?= $this->security->get_csrf_hash() ?>"
+                });
+                $.ajax({'dataType': 'json', 'type': 'POST', 'url': sSource, 'data': aoData, 'success': fnCallback});
+            },
+            'fnRowCallback': function (nRow, aData, iDisplayIndex) {
+                var oSettings = oTable.fnSettings();
+                nRow.id = aData[0];
+                nRow.className = "receipt_link";
+                return nRow;
+            },
+            "aoColumns": [{
+                "bSortable": false,
+                "mRender": checkbox
+            }, {"mRender": fld}, null, null, null, {"mRender": currencyFormat}, {"mRender": currencyFormat}, {"mRender": currencyFormat}, {"mRender": row_status}, {"mRender": pay_status}, {"bSortable": false}],
+            "fnFooterCallback": function (nRow, aaData, iStart, iEnd, aiDisplay) {
+                var gtotal = 0, paid = 0, balance = 0;
+                for (var i = 0; i < aaData.length; i++) {
+                    gtotal += parseFloat(aaData[aiDisplay[i]][5]);
+                    paid += parseFloat(aaData[aiDisplay[i]][6]);
+                    balance += parseFloat(aaData[aiDisplay[i]][7]);
+                }
+                var nCells = nRow.getElementsByTagName('th');
+                nCells[5].innerHTML = currencyFormat(parseFloat(gtotal));
+                nCells[6].innerHTML = currencyFormat(parseFloat(paid));
+                nCells[7].innerHTML = currencyFormat(parseFloat(balance));
+            }
+        }).fnSetFilteringDelay().dtFilter([
+            {column_number: 1, filter_default_label: "[<?=lang('date');?> (yyyy-mm-dd)]", filter_type: "text", data: []},
+            {column_number: 2, filter_default_label: "[<?=lang('reference_no');?>]", filter_type: "text", data: []},
+            {column_number: 3, filter_default_label: "[<?=lang('biller');?>]", filter_type: "text", data: []},
+            {column_number: 4, filter_default_label: "[<?=lang('customer');?>]", filter_type: "text"},
+            {column_number: 8, filter_default_label: "[<?=lang('sale_status');?>]", filter_type: "text", data: []},
+            {column_number: 9, filter_default_label: "[<?=lang('payment_status');?>]", filter_type: "text", data: []},
+        ], "footer");
+
+        $(document).on('click', '.duplicate_pos', function (e) {
+            e.preventDefault();
+            var link = $(this).attr('href');
+            if (localStorage.getItem('positems')) {
+                bootbox.confirm("<?= $this->lang->line('leave_alert') ?>", function (gotit) {
+                    if (gotit == false) {
+                        return true;
+                    } else {
+                        window.location.href = link;
+                    }
+                });
+            } else {
+                window.location.href = link;
+            }
+        });
+
+        $(document).on("click", ".po-cancel", function(e){
+            e.preventDefault();
+            var link = $(this).attr('href');
+            console.log(codes);
+            // return;
+            var boxd = bootbox.dialog({
+                title: "<i class='fa fa-key'></i> Please Type ",
+                message: '<input id="pos_pin" name="pos_code" type="text" placeholder="Code" class="form-control"> ',
+                buttons: {
+                    success: {
+                        label: "<i class='fa fa-tick'></i> OK",
+                        className: "btn-success verify_pin",
+                        callback: function () {
+                            if($("#pos_pin").val() == codes){
+                                var row = $(this).closest('tr');
+                                $('.po').popover('hide');
+                                console.log(link);
+                                var return_id = $(this).attr('data-return-id');
+                                $.ajax({type: "get", url: link, dataType: 'json',
+                                    success: function(data) {
+                                        if (data.error == 1) { addAlert(data.msg, 'danger'); }
+                                        else { $(".bootbox ").modal('hide'); addAlert(data.msg, 'success'); if(oTable != '') { oTable.fnDraw(); } }
+                                    },
+                                    error: function(data) { addAlert('Ajax call failed', 'danger'); }
+                                });
+                                return false;
+                            }
+                            else{
+                                bootbox.dialog({
+                                    title: "<i class='fa fa-key'></i> Failed",
+                                    message: '<label>Code Donot Match</label> ',
+                                    buttons: {
+                                        success: {
+                                            label: "<i class='fa fa-tick'></i> OK",
+                                            className: "btn-success verify_pin",
+                                            callback: function () {        
+                                                
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+
+        $(document).on("click", ".po-return_sale", function(e){
+            e.preventDefault();
+            var link = $(this).attr('href');
+            console.log(link);
+            code = true;
+            // return;
+            if (code){
+                var boxd = bootbox.dialog({
+                    title: "<i class='fa fa-key'></i> Please Type ",
+                    message: '<input id="pos_pin" name="pos_code" type="text" placeholder="Code" class="form-control"> ',
+                    buttons: {
+                        success: {
+                            label: "<i class='fa fa-tick'></i> OK",
+                            className: "btn-success verify_pin",
+                            callback: function () {
+                                if($("#pos_pin").val() == codes){
+                                    window.location.href = link;
+                                    return false;
+                                }
+                                else{
+                                    bootbox.dialog({
+                                        title: "<i class='fa fa-key'></i> Failed",
+                                        message: '<label>Code Donot Match</label> ',
+                                        buttons: {
+                                            success: {
+                                                label: "<i class='fa fa-tick'></i> OK",
+                                                className: "btn-success verify_pin",
+                                                callback: function () {        
+                                                    
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            else{
+                 window.location.href = link;
+            }
+        });
+
+
+        $(document).on('click', '.email_receipt', function () {
+            var sid = $(this).attr('data-id');
+            var ea = $(this).attr('data-email-address');
+            var email = prompt("<?= lang("email_address"); ?>", ea);
+            if (email != null) {
+                $.ajax({
+                    type: "post",
+                    url: "<?= admin_url('pos/email_receipt') ?>/" + sid,
+                    data: { <?= $this->security->get_csrf_token_name(); ?>: "<?= $this->security->get_csrf_hash(); ?>", email: email, id: sid },
+                    dataType: "json",
+                        success: function (data) {
+                        bootbox.alert(data.msg);
+                    },
+                    error: function () {
+                        bootbox.alert('<?= lang('ajax_request_failed'); ?>');
+                        return false;
+                    }
+                });
+            }
+        });
+    });
+
+</script>
+
+<div class="box">
+    <div class="box-header">
+        <h2 class="blue"><i
+                class="fa-fw fa fa-barcode"></i><?= lang('pos_sales') . ' (' . ($warehouse_id ? $warehouse->name : lang('all_warehouses')) . ')'; ?>
+        </h2>
+
+        <div class="box-icon">
+            <ul class="btn-tasks">
+                <li class="dropdown">
+                    <a href="#" class="toggle_up tip" title="<?= lang('hide_form') ?>">
+                        <i class="icon fa fa-toggle-up"></i>
+                    </a>
+                </li>
+                <li class="dropdown">
+                    <a href="#" class="toggle_down tip" title="<?= lang('show_form') ?>">
+                        <i class="icon fa fa-toggle-down"></i>
+                    </a>
+                </li>
+                <li class="dropdown">
+                    <a data-toggle="dropdown" class="dropdown-toggle" href="#"><i class="icon fa fa-tasks tip"  data-placement="left" title="<?= lang("actions") ?>"></i></a>
+                    <ul class="dropdown-menu pull-right tasks-menus" role="menu" aria-labelledby="dLabel">
+                        <li><a href="<?= admin_url('pos') ?>"><i class="fa fa-plus-circle"></i> <?= lang('add_sale') ?></a></li>
+                        <li><a href="#" id="excel" data-action="export_excel"><i class="fa fa-file-excel-o"></i> <?= lang('export_to_excel') ?></a></li>
+                        <li class="divider"></li>
+                        <li><a href="#" class="bpo" title="<b><?= $this->lang->line("delete_sales") ?></b>" data-content="<p><?= lang('r_u_sure') ?></p><button type='button' class='btn btn-danger' id='delete' data-action='delete'><?= lang('i_m_sure') ?></a> <button class='btn bpo-close'><?= lang('no') ?></button>" data-html="true" data-placement="left"><i class="fa fa-trash-o"></i> <?= lang('delete_sales') ?></a></li>
+                    </ul>
+                </li>
+                <?php if (!empty($warehouses)) { ?>
+                    <li class="dropdown">
+                        <a data-toggle="dropdown" class="dropdown-toggle" href="#"><i class="icon fa fa-building-o tip" data-placement="left" title="<?= lang("warehouses") ?>"></i></a>
+                        <ul class="dropdown-menu pull-right tasks-menus" role="menu" aria-labelledby="dLabel">
+                            <li><a href="<?= admin_url('pos/sales') ?>"><i class="fa fa-building-o"></i> <?= lang('all_warehouses') ?></a></li>
+                            <li class="divider"></li>
+                            <?php
+                            foreach ($warehouses as $warehouse) {
+                                echo '<li><a href="' . admin_url('pos/sales/' . $warehouse->id) . '"><i class="fa fa-building"></i>' . $warehouse->name . '</a></li>';
+                            }
+                            ?>
+                        </ul>
+                    </li>
+                <?php } ?>
+            </ul>
+        </div>
+    </div>
+    <div class="box-content">
+        <div class="row">
+            <div class="col-lg-12">
+                <p class="introtext"><?= lang('list_results'); ?></p>
+                <div id="form">
+                    <?php echo admin_form_open("pos/sales/".$warehouse_id); ?>
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <?= lang("start_date", "start_date"); ?>
+                                <?php echo form_input('start_date', (isset($_POST['start_date']) ? $_POST['start_date'] : ""), 'class="form-control datetime" id="start_date"'); ?>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <?= lang("end_date", "end_date"); ?>
+                                <?php echo form_input('end_date', (isset($_POST['end_date']) ? $_POST['end_date'] : ""), 'class="form-control datetime" id="end_date"'); ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div
+                            class="controls"> <?php echo form_submit('submit_report', $this->lang->line("submit"), 'class="btn btn-primary"'); ?> </div>
+                    </div>
+                    <?php echo form_close(); ?>
+
+                </div>
+                
+                <?php if (true || $Owner || $GP['bulk_actions']) {
+                    echo admin_form_open('sales/sale_actions', 'id="action-form"');
+                } ?>
+                <div class="table-responsive">
+                    <table id="POSData" class="table table-bordered table-hover table-striped">
+                        <thead>
+                        <tr>
+                            <th style="min-width:30px; width: 30px; text-align: center;">
+                                <input class="checkbox checkft" type="checkbox" name="check"/>
+                            </th>
+                            <th><?= lang("date"); ?></th>
+                            <th><?= lang("reference_no"); ?></th>
+                            <th><?= lang("biller"); ?></th>
+                            <th><?= lang("customer"); ?></th>
+                            <th><?= lang("grand_total"); ?></th>
+                            <th><?= lang("paid"); ?></th>
+                            <th><?= lang("balance"); ?></th>
+                            <th><?= lang("sale_status"); ?></th>
+                            <th><?= lang("payment_status"); ?></th>
+                            <th style="width:80px; text-align:center;"><?= lang("actions"); ?></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td colspan="10" class="dataTables_empty"><?= lang("loading_data"); ?></td>
+                        </tr>
+                        </tbody>
+                        <tfoot class="dtFilter">
+                        <tr class="active">
+                            <th style="min-width:30px; width: 30px; text-align: center;">
+                                <input class="checkbox checkft" type="checkbox" name="check"/>
+                            </th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th><?= lang("grand_total"); ?></th>
+                            <th><?= lang("paid"); ?></th>
+                            <th><?= lang("balance"); ?></th>
+                            <th class="defaul-color"></th>
+                            <th class="defaul-color"></th>
+                            <th style="width:80px; text-align:center;"><?= lang("actions"); ?></th>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php if (true || $Owner || $GP['bulk_actions']) { ?>
+    <div style="display: none;">
+        <input type="hidden" name="form_action" value="" id="form_action"/>
+        <?= form_submit('performAction', 'performAction', 'id="action-form-submit"') ?>
+    </div>
+    <?= form_close() ?>
+<?php } ?>
