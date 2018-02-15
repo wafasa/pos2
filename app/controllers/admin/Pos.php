@@ -78,6 +78,7 @@ class Pos extends MY_Controller
                         $payment_status = $dt['cells'][$i][8];
                         $warehouse_id = $dt['cells'][$i][10];
                         $pos = $dt['cells'][$i][10];
+                        $paid_by = $this->validate_payments($dt['cells'][$i][12]);
 
                         $datasx = array(
 							'date'=>$date,
@@ -120,7 +121,7 @@ class Pos extends MY_Controller
 							'date'=>$date,
 							'reference_no' => $this->site->getReference('pay'),
 							'sale_id' => $sale_id,
-							'paid_by' =>'cash',
+							'paid_by' => $paid_by,
 							'created_by' => $this->site->getCompanyByName($customer),
 							'type' =>'received',
 							'amount' =>$grand_total,
@@ -130,6 +131,7 @@ class Pos extends MY_Controller
 						$this->site->updateReference('pay');
                         $this->site->updateReference('pos');
 						$this->db->insert('payments', $datapy);
+                        // echo $this->db->last_query();die;
 						$this->site->syncSalePayments($sale_id);
                     } elseif ($dt['cells'][$i][1] == null && $dt['cells'][$i][2] != null) {
 						if($dt['cells'][$i][3]==='Description') $i+=1;
@@ -220,7 +222,19 @@ class Pos extends MY_Controller
             $this->page_construct('pos/pos_by_excel', $meta, $this->data);
         }
     }
-    
+
+    public function validate_payments($string = '')
+    {
+        $default_payment = "cash";
+        $payments = array("debit", "cash" , "CC", "Cheque");
+        foreach ($payments as $key => $value) {
+            if (strtolower($value) == strtolower($string)) {
+                return $value;
+            }
+        }
+        return $default_payment;
+    }
+
     public function _add_excel()
     {
         if (isset($_FILES["userfile"])) {
