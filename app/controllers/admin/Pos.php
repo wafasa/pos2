@@ -414,6 +414,8 @@ class Pos extends MY_Controller
 
         $start_date = $this->input->get('start_date') ? $this->input->get('start_date') : NULL;
         $end_date = $this->input->get('end_date') ? $this->input->get('end_date') : NULL;
+        $paid_by = $this->input->get('paid_by') ? $this->input->get('paid_by') : NULL;
+
 
         if ($start_date) {
             $start_date = $this->sma->fld($start_date);
@@ -462,19 +464,21 @@ class Pos extends MY_Controller
         $this->load->library('datatables');
         if ($warehouse_id) {
             $this->datatables
-                ->select($this->db->dbprefix('sales') . ".id as id, DATE_FORMAT(date, '%Y-%m-%d %T') as date, reference_no, biller, customer, (grand_total+COALESCE(rounding, 0)), paid, (grand_total-paid) as balance, sale_status, payment_status, companies.email as cemail")
+                ->select($this->db->dbprefix('sales') . ".id as id, DATE_FORMAT(sma_sales.date, '%Y-%m-%d %T') as date, sma_sales.reference_no, biller, customer, (grand_total+COALESCE(rounding, 0)), paid, (grand_total-paid) as balance, sale_status, payment_status, companies.email as cemail")
                 ->from('sales')
                 ->join('companies', 'companies.id=sales.customer_id', 'left')
+                ->join('payments', 'payments.sale_id=sales.id', '')
                 ->where('warehouse_id', $warehouse_id)
                 ->group_by('sales.id');
         } else {
             $this->datatables
-                ->select($this->db->dbprefix('sales') . ".id as id, DATE_FORMAT(date, '%Y-%m-%d %T') as date, reference_no, biller, customer, (grand_total+COALESCE(rounding, 0)), paid, (grand_total+rounding-paid) as balance, sale_status, payment_status, companies.email as cemail")
+                ->select($this->db->dbprefix('sales') . ".id as id, DATE_FORMAT(sma_sales.date, '%Y-%m-%d %T') as date, sma_sales.reference_no, biller, customer, (grand_total+COALESCE(rounding, 0)), paid, (grand_total+rounding-paid) as balance, sale_status, payment_status, companies.email as cemail")
                 ->from('sales')
                 ->join('companies', 'companies.id=sales.customer_id', 'left')
+                ->join('payments', 'payments.sale_id=sales.id', '')
                 ->group_by('sales.id');
         }
-        // $this->datatables->where('pos', 1);
+        // $this->db->where('pos', 1);
         if (!$this->Customer && !$this->Supplier && !$this->Owner && !$this->Admin && !$this->session->userdata('view_right')) {
             $this->datatables->where('created_by', $this->session->userdata('user_id'));
         } elseif ($this->Customer) {
@@ -483,6 +487,13 @@ class Pos extends MY_Controller
         if ($start_date) {
             $this->datatables->where($this->db->dbprefix('sales').'.date BETWEEN "' . $start_date . '" and "' . $end_date . '"');
         }
+        if ($paid_by) {
+            $this->datatables->where('payments.paid_by', $paid_by);
+        }
+
+        // echo $this->db->get();
+        // echo $this->db->last_query();die;
+
         $this->datatables->add_column("Actions", $action, "id, cemail")->unset_column('cemail');
         echo $this->datatables->generate();
     }

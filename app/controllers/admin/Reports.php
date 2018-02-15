@@ -323,11 +323,15 @@ class Reports extends MY_Controller
                     from {$this->db->dbprefix('purchase_items')} pi 
                     LEFT JOIN {$this->db->dbprefix('purchases')} p on p.id = pi.purchase_id ";
         
+        // $sp = "( SELECT si.product_id, SUM( si.quantity ) soldQty, SUM( si.subtotal ) totalSale 
+        //             from " . $this->db->dbprefix('sales') . " s 
+        //             JOIN " . $this->db->dbprefix('sale_items') . " si on s.id = si.sale_id 
+        //             WHERE 1
+        //             AND si.net_unit_price > 0 AND si.quantity > 0";
         $sp = "( SELECT si.product_id, SUM( si.quantity ) soldQty, SUM( si.subtotal ) totalSale 
                     from " . $this->db->dbprefix('sales') . " s 
                     JOIN " . $this->db->dbprefix('sale_items') . " si on s.id = si.sale_id 
-                    WHERE 1
-                    AND si.net_unit_price > 0 AND si.quantity > 0";
+                    WHERE 1";
         
         $query_free_item ="( SELECT si.product_id, SUM( si.quantity ) soldQty, SUM( si.subtotal ) totalSale 
                     from " . $this->db->dbprefix('sales') . " s 
@@ -377,15 +381,18 @@ class Reports extends MY_Controller
 				COALESCE( PCosts.purchasedQty, 0 ) as PurchasedQty,
 				COALESCE( PSales.soldQty, 0 ) as SoldQty,
 				COALESCE( PCosts.balacneQty, 0 ) as BalacneQty,
-				COALESCE( PCosts.totalPurchase, 0 ) as TotalPurchase,
-				COALESCE( PCosts.balacneValue, 0 ) as TotalBalance,
-				COALESCE( PSales.totalSale, 0 ) as TotalSales,
-                                COALESCE( PSales.totalSale, 0 ) as free_item,
-                                COALESCE( PSales.totalSale, 0 ) as return_item,
+                COALESCE( PReturnSales.soldQty, 0 ) as ReturnQty,
+                COALESCE( PCosts.totalPurchase, 0 ) as TotalPurchase,
+                COALESCE( PCosts.balacneValue, 0 ) as TotalBalance,
+                COALESCE( PSales.totalSale, 0 ) as TotalSales,
+                COALESCE( PFeeItem.totalSale, 0 ) as free_item,
+                COALESCE( PReturnSales.totalSale, 0 ) as return_item,
                 (COALESCE( PSales.totalSale, 0 ) - COALESCE( PCosts.totalPurchase, 0 )) as Profit", FALSE)
                 ->from('products')
                 ->join($sp, 'products.id = PSales.product_id', 'left')
                 ->join($pp, 'products.id = PCosts.product_id', 'left')
+                ->join($query_free_item, 'products.id = PFeeItem.product_id', 'left')
+                ->join($query_return_sales, 'products.id = PReturnSales.product_id', 'left')
                 ->order_by('products.name');
 
             if ($product) {
@@ -420,6 +427,7 @@ class Reports extends MY_Controller
             }
 
             $q = $this->db->get();
+            // echo $this->db->last_query();die;
             if ($q->num_rows() > 0) {
                 foreach (($q->result()) as $row) {
                     $data[] = $row;
@@ -437,13 +445,14 @@ class Reports extends MY_Controller
                 $this->excel->getActiveSheet()->SetCellValue('B1', lang('product_name'));
                 $this->excel->getActiveSheet()->SetCellValue('C1', lang('purchased'));
                 $this->excel->getActiveSheet()->SetCellValue('D1', lang('sold'));
-                $this->excel->getActiveSheet()->SetCellValue('E1', lang('balance'));
-                $this->excel->getActiveSheet()->SetCellValue('F1', lang('purchased_amount'));
-                $this->excel->getActiveSheet()->SetCellValue('G1', lang('sold_amount'));
-                $this->excel->getActiveSheet()->SetCellValue('H1', lang('profit_loss'));
-                $this->excel->getActiveSheet()->SetCellValue('I1', lang('stock_in_hand'));
-                $this->excel->getActiveSheet()->SetCellValue('J1', lang('free_item'));
-                $this->excel->getActiveSheet()->SetCellValue('K1', "Return Product");
+                $this->excel->getActiveSheet()->SetCellValue('E1', "Return Product(Qty)");
+                $this->excel->getActiveSheet()->SetCellValue('F1', lang('balance'));
+                $this->excel->getActiveSheet()->SetCellValue('G1', lang('purchased_amount'));
+                $this->excel->getActiveSheet()->SetCellValue('H1', lang('sold_amount'));
+                $this->excel->getActiveSheet()->SetCellValue('I1', lang('profit_loss'));
+                $this->excel->getActiveSheet()->SetCellValue('J1', lang('stock_in_hand'));
+                $this->excel->getActiveSheet()->SetCellValue('K1', lang('free_item'));
+                $this->excel->getActiveSheet()->SetCellValue('L1', "Return Product");
 
                 $row = 2;
                 $sQty = 0;
@@ -458,13 +467,14 @@ class Reports extends MY_Controller
                     $this->excel->getActiveSheet()->SetCellValue('B' . $row, $data_row->name);
                     $this->excel->getActiveSheet()->SetCellValue('C' . $row, $data_row->PurchasedQty);
                     $this->excel->getActiveSheet()->SetCellValue('D' . $row, $data_row->SoldQty);
-                    $this->excel->getActiveSheet()->SetCellValue('E' . $row, $data_row->BalacneQty);
-                    $this->excel->getActiveSheet()->SetCellValue('F' . $row, $data_row->TotalPurchase);
-                    $this->excel->getActiveSheet()->SetCellValue('G' . $row, $data_row->TotalSales);
-                    $this->excel->getActiveSheet()->SetCellValue('H' . $row, $data_row->Profit);
-                    $this->excel->getActiveSheet()->SetCellValue('I' . $row, $data_row->TotalBalance);
-                    $this->excel->getActiveSheet()->SetCellValue('J' . $row, $data_row->free_item);
-                    $this->excel->getActiveSheet()->SetCellValue('K' . $row, $data_row->return_item);
+                    $this->excel->getActiveSheet()->SetCellValue('E' . $row, $data_row->ReturnQty);
+                    $this->excel->getActiveSheet()->SetCellValue('F' . $row, $data_row->BalacneQty);
+                    $this->excel->getActiveSheet()->SetCellValue('G' . $row, $data_row->TotalPurchase);
+                    $this->excel->getActiveSheet()->SetCellValue('H' . $row, $data_row->TotalSales);
+                    $this->excel->getActiveSheet()->SetCellValue('I' . $row, $data_row->Profit);
+                    $this->excel->getActiveSheet()->SetCellValue('J' . $row, $data_row->TotalBalance);
+                    $this->excel->getActiveSheet()->SetCellValue('K' . $row, $data_row->free_item);
+                    $this->excel->getActiveSheet()->SetCellValue('L' . $row, $data_row->return_item);
                     $pQty += $data_row->PurchasedQty;
                     $sQty += $data_row->SoldQty;
                     $bQty += $data_row->BalacneQty;
@@ -478,11 +488,11 @@ class Reports extends MY_Controller
                     ->getTop()->setBorderStyle(PHPExcel_Style_Border::BORDER_MEDIUM);
                 $this->excel->getActiveSheet()->SetCellValue('C' . $row, $pQty);
                 $this->excel->getActiveSheet()->SetCellValue('D' . $row, $sQty);
-                $this->excel->getActiveSheet()->SetCellValue('E' . $row, $bQty);
-                $this->excel->getActiveSheet()->SetCellValue('F' . $row, $pAmt);
-                $this->excel->getActiveSheet()->SetCellValue('G' . $row, $sAmt);
-                $this->excel->getActiveSheet()->SetCellValue('H' . $row, $pl);
-                $this->excel->getActiveSheet()->SetCellValue('I' . $row, $bAmt);
+                $this->excel->getActiveSheet()->SetCellValue('F' . $row, $bQty);
+                $this->excel->getActiveSheet()->SetCellValue('G' . $row, $pAmt);
+                $this->excel->getActiveSheet()->SetCellValue('H' . $row, $sAmt);
+                $this->excel->getActiveSheet()->SetCellValue('I' . $row, $pl);
+                $this->excel->getActiveSheet()->SetCellValue('J' . $row, $bAmt);
 
                 $this->excel->getActiveSheet()->getColumnDimension('A')->setWidth(35);
                 $this->excel->getActiveSheet()->getColumnDimension('B')->setWidth(35);
@@ -494,6 +504,7 @@ class Reports extends MY_Controller
                 $this->excel->getActiveSheet()->getColumnDimension('H')->setWidth(25);
                 $this->excel->getActiveSheet()->getColumnDimension('I')->setWidth(25);
                 $this->excel->getActiveSheet()->getColumnDimension('J')->setWidth(25);
+                $this->excel->getActiveSheet()->getColumnDimension('K')->setWidth(25);
                 $this->excel->getActiveSheet()->getColumnDimension('K')->setWidth(25);
                 $this->excel->getDefaultStyle()->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
                 $this->excel->getActiveSheet()->getStyle('C2:G' . $row)->getAlignment()->setWrapText(true);
@@ -512,8 +523,8 @@ class Reports extends MY_Controller
                 ->select($this->db->dbprefix('products') . ".code, " . $this->db->dbprefix('products') . ".name,
 				CONCAT(COALESCE( PCosts.purchasedQty, 0 ), '__', COALESCE( PCosts.totalPurchase, 0 )) as purchased,
 				CONCAT(COALESCE( PSales.soldQty, 0 ), '__', COALESCE( PSales.totalSale, 0 )) as sold,
-                CONCAT(COALESCE( PFeeItem.soldQty, 0 ), '__', COALESCE( PSales.totalSale, 0 )) as free_item,
-                CONCAT(COALESCE( PReturnSales.soldQty, 0 ), '__', COALESCE( PSales.totalSale, 0 )) as return_item,                            
+                CONCAT(COALESCE( PFeeItem.soldQty, 0 ), '__', COALESCE( PFeeItem.totalSale, 0 )) as free_item,
+                CONCAT(COALESCE( PReturnSales.soldQty, 0 ), '__', COALESCE( PReturnSales.totalSale, 0 )) as return_item,
                 (COALESCE( PSales.totalSale, 0 ) - COALESCE( PCosts.totalPurchase, 0 )) as Profit,
 				CONCAT(COALESCE( PCosts.balacneQty, 0 ), '__', COALESCE( PCosts.balacneValue, 0 )) as balance, {$this->db->dbprefix('products')}.id as id", FALSE)
                 ->from('products')
@@ -1311,6 +1322,7 @@ class Reports extends MY_Controller
         $end_date = $this->input->get('end_date') ? $this->input->get('end_date') : NULL;
         $serial = $this->input->get('serial') ? $this->input->get('serial') : NULL;
         $taxed = $this->input->get('taxed') && $this->input->get('taxed')!=0 ? $this->input->get('taxed') : NULL;
+        $paid_by = $this->input->get('paid_by') ? $this->input->get('paid_by') : NULL;
 
         if ($start_date) {
             $start_date = $this->sma->fld($start_date);
@@ -1339,6 +1351,9 @@ class Reports extends MY_Controller
             // echo $this->db->last_query();die;
             if ($user) {
                 $this->db->where('sales.created_by', $user);
+            }
+            if ($paid_by) {
+                $this->db->where('payments.paid_by', $paid_by);
             }
             if ($product) {
                 $this->db->where('sale_items.product_id', $product);
@@ -1527,6 +1542,9 @@ class Reports extends MY_Controller
             if ($user) {
                 $this->datatables->where('sales.created_by', $user);
             }
+            if ($paid_by) {
+                $this->datatables->where('payments.paid_by', $paid_by);
+            }
             if ($product) {
                 $this->datatables->where('FSI.product_id', $product, FALSE);
             }
@@ -1590,6 +1608,7 @@ class Reports extends MY_Controller
         $start_date = $this->input->get('start_date') ? $this->input->get('start_date') : NULL;
         $end_date = $this->input->get('end_date') ? $this->input->get('end_date') : NULL;
         $serial = $this->input->get('serial') ? $this->input->get('serial') : NULL;
+        $paid_by = $this->input->get('paid_by') ? $this->input->get('paid_by') : NULL;
 
         if ($start_date) {
             $start_date = $this->sma->fld($start_date);
@@ -1630,6 +1649,9 @@ class Reports extends MY_Controller
             }
             if ($reference_no) {
                 $this->db->like('sales.reference_no', $reference_no, 'both');
+            }
+            if ($paid_by) {
+                $this->db->where('payments.paid_by', $paid_by);
             }
             if ($start_date) {
                 $this->db->where($this->db->dbprefix('sales').'.date BETWEEN "' . $start_date . '" and "' . $end_date . '"');
@@ -1743,6 +1765,10 @@ class Reports extends MY_Controller
             if ($reference_no) {
                 $this->datatables->like('sales.reference_no', $reference_no, 'both');
             }
+            if ($paid_by) {
+                $this->datatables->where('payments.paid_by', $paid_by);
+            }
+
             if ($start_date) {
                 $this->datatables->where($this->db->dbprefix('sales').'.date BETWEEN "' . $start_date . '" and "' . $end_date . '"');
             }

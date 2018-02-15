@@ -35,6 +35,9 @@ if ($this->input->post('end_date')) {
 if ($this->input->post('taxed')) {
     $v .= "&taxed=" . $this->input->post('taxed');
 }
+if ($this->input->post('paid_by')) {
+    $v .= "&paid_by=" . $this->input->post('paid_by');
+}
 
 ?>
 
@@ -229,6 +232,17 @@ if ($this->input->post('taxed')) {
                                 }
                                 echo form_dropdown('user', $us, (isset($_POST['user']) ? $_POST['user'] : ""), 'class="form-control" id="user" data-placeholder="' . $this->lang->line("select") . " " . $this->lang->line("user") . '"');
                                 ?>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label class="control-label" for="user">Paid By</label>
+                                <select class="form-control" name="paid_by">
+                                    <option value="cash" <?php echo @$_POST["paid_by"] == "cash" ? "selected" : "" ?>>Cash</option>
+                                    <option value="cc" <?php echo @$_POST["paid_by"] == "cc" ? "selected" : "" ?>>CC</option>
+                                    <option value="Cheque" <?php echo @$_POST["paid_by"] == "Cheque" ? "selected" : "" ?>>Cheque</option>
+                                    <option value="debit" <?php echo @$_POST["paid_by"] == "debit" ? "selected" : "" ?>>Debit</option>
+                                </select>
                             </div>
                         </div>
                         <div class="col-sm-4">

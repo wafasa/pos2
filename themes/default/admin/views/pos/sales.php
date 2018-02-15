@@ -9,6 +9,9 @@ if ($this->input->post('start_date')) {
 if ($this->input->post('end_date')) {
     $v .= "&end_date=" . $this->input->post('end_date');
 }
+if ($this->input->post('paid_by')) {
+    $v .= "&paid_by=" . $this->input->post('paid_by');
+}
 
 ?>
 <script type="text/javascript">
@@ -272,6 +275,17 @@ if ($this->input->post('end_date')) {
                             <div class="form-group">
                                 <?= lang("end_date", "end_date"); ?>
                                 <?php echo form_input('end_date', (isset($_POST['end_date']) ? $_POST['end_date'] : ""), 'class="form-control datetime" id="end_date"'); ?>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label class="control-label" for="user">Paid By</label>
+                                <select class="form-control" name="paid_by">
+                                    <option value="cash" <?php echo @$_POST["paid_by"] == "cash" ? "selected" : "" ?>>Cash</option>
+                                    <option value="cc" <?php echo @$_POST["paid_by"] == "cc" ? "selected" : "" ?>>CC</option>
+                                    <option value="Cheque" <?php echo @$_POST["paid_by"] == "Cheque" ? "selected" : "" ?>>Cheque</option>
+                                    <option value="debit" <?php echo @$_POST["paid_by"] == "debit" ? "selected" : "" ?>>Debit</option>
+                                </select>
                             </div>
                         </div>
                     </div>
