@@ -69,28 +69,32 @@ if ($this->input->post('cf6')) {
             "aoColumns": [null, null,  {"mRender": spb},  {"mRender": spb}, {"mRender": spb}, {"mRender": spb}, {"mRender": currencyFormat}, {"mRender": spb}],
             "fnFooterCallback": function (nRow, aaData, iStart, iEnd, aiDisplay) {
                 console.log(aaData);
-                var pq = 0, sq = 0, bq = 0, pa = 0, sa = 0, ba = 0, pl = 0, return_item = 0, free_item = 0;
+                var pq = 0, sq = 0, bq = 0, pa = 0, sa = 0, ba = 0, pl = 0, rq = 0, ra = 0, fq = 0, fa = 0;
                 for (var i = 0; i < aaData.length; i++) {
-                    p = (aaData[aiDisplay[i]][2]).split('__');
-                    s = (aaData[aiDisplay[i]][3]).split('__');
-                    s = (aaData[aiDisplay[i]][4]).split('__');
-                    s = (aaData[aiDisplay[i]][5]).split('__');
-                    b = (aaData[aiDisplay[i]][7]).split('__');
-                    console.log(parseFloat(p[0]));
-                    pq += parseFloat(p[0]);
-                    pa += parseFloat(p[1]);
-                    sq += parseFloat(s[0]);
-                    sa += parseFloat(s[1]);
-                    bq += parseFloat(b[0]);
-                    ba += parseFloat(b[1]);
-                    pl += parseFloat(aaData[aiDisplay[i]][4]);
+                    col2 = (aaData[aiDisplay[i]][2]).split('__');
+                    col3 = (aaData[aiDisplay[i]][3]).split('__');
+                    col4 = (aaData[aiDisplay[i]][4]).split('__');
+                    col5 = (aaData[aiDisplay[i]][5]).split('__');
+                    col7 = (aaData[aiDisplay[i]][7]).split('__');
+                    console.log(parseFloat(col2[0]));
+                    pq += parseFloat(col2[0]);
+                    pa += parseFloat(col2[1]);
+                    sq += parseFloat(col3[0]);
+                    sa += parseFloat(col3[1]);
+                    fq += parseFloat(col4[0]);
+                    fa += parseFloat(col4[1]);
+                    rq += parseFloat(col5[0]);
+                    ra += parseFloat(col5[1]);
+                    bq += parseFloat(col7[0]);
+                    ba += parseFloat(col7[1]);
+                    pl += parseFloat(aaData[aiDisplay[i]][6]);
                 }
                 var nCells = nRow.getElementsByTagName('th');
                 nCells[2].innerHTML = '<div class="text-right">('+formatQuantity2(pq)+') '+formatMoney(pa)+'</div>';
                 nCells[3].innerHTML = '<div class="text-right">('+formatQuantity2(sq)+') '+formatMoney(sa)+'</div>';
-                nCells[4].innerHTML = currencyFormat(parseFloat(pl));
-                nCells[5].innerHTML = '<div class="text-right">('+formatQuantity2(bq)+') '+formatMoney(ba)+'</div>';
-                nCells[6].innerHTML = '<div class="text-right">('+formatQuantity2(bq)+') '+formatMoney(ba)+'</div>';
+                nCells[4].innerHTML = '<div class="text-right">('+formatQuantity2(fq)+') '+formatMoney(fa)+'</div>';
+                nCells[5].innerHTML = '<div class="text-right">('+formatQuantity2(rq)+') '+formatMoney(ra)+'</div>';
+                nCells[6].innerHTML = currencyFormat(parseFloat(pl));
                 nCells[7].innerHTML = '<div class="text-right">('+formatQuantity2(bq)+') '+formatMoney(ba)+'</div>';
             }
         }).fnSetFilteringDelay().dtFilter([

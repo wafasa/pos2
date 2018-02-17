@@ -281,6 +281,7 @@ if ($this->input->post('paid_by')) {
                             <div class="form-group">
                                 <label class="control-label" for="user">Paid By</label>
                                 <select class="form-control" name="paid_by">
+                                    <option value="" <?php echo @$_POST["paid_by"] == "" ? "selected" : "" ?>>All Type</option>
                                     <option value="cash" <?php echo @$_POST["paid_by"] == "cash" ? "selected" : "" ?>>Cash</option>
                                     <option value="cc" <?php echo @$_POST["paid_by"] == "cc" ? "selected" : "" ?>>CC</option>
                                     <option value="Cheque" <?php echo @$_POST["paid_by"] == "Cheque" ? "selected" : "" ?>>Cheque</option>
