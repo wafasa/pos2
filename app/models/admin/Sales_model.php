@@ -182,7 +182,12 @@ class Sales_model extends CI_Model
 
     public function getInvoiceByID($id)
     {
-        $q = $this->db->get_where('sales', array('id' => $id), 1);
+        $this->db->select('sales.*,payments.paid_by');
+        $this->db->from('sales');
+        $this->db->join("payments", "payments.sale_id = sales.id");
+        $this->db->where(array('sales.id' => $id));
+        $q = $this->db->get();
+        // echo $this->db->last_query();die;
         if ($q->num_rows() > 0) {
             return $q->row();
         }

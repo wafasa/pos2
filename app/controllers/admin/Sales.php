@@ -1464,10 +1464,12 @@ class Sales extends MY_Controller
                     $this->excel->getActiveSheet()->SetCellValue('H1', lang('payment_status'));
 					 $this->excel->getActiveSheet()->SetCellValue('J1', lang('Warehouse'));
 					  $this->excel->getActiveSheet()->SetCellValue('K1', lang('Pos'));
+                      $this->excel->getActiveSheet()->SetCellValue('L1', "Paid By");
 					
                     $row = 2;
                     foreach ($_POST['val'] as $id) {
                         $sale = $this->sales_model->getInvoiceByID($id);
+                        // $this->sma->print_arrays($sale);
                         $this->excel->getActiveSheet()->SetCellValue('A' . $row, $this->sma->hrld($sale->date));
                         $this->excel->getActiveSheet()->SetCellValue('B' . $row, $sale->reference_no);
                         $this->excel->getActiveSheet()->SetCellValue('C' . $row, $sale->biller);
@@ -1475,8 +1477,9 @@ class Sales extends MY_Controller
                         $this->excel->getActiveSheet()->SetCellValue('F' . $row, $sale->grand_total);
                         $this->excel->getActiveSheet()->SetCellValue('G' . $row, lang($sale->paid));
                         $this->excel->getActiveSheet()->SetCellValue('H' . $row, lang($sale->payment_status));
-						 $this->excel->getActiveSheet()->SetCellValue('j' . $row, lang($sale->warehouse_id));
-						  $this->excel->getActiveSheet()->SetCellValue('k' . $row, lang($sale->pos));
+                        $this->excel->getActiveSheet()->SetCellValue('j' . $row, lang($sale->warehouse_id));
+                        $this->excel->getActiveSheet()->SetCellValue('k' . $row, lang($sale->pos));
+                        $this->excel->getActiveSheet()->SetCellValue('l' . $row, lang($sale->paid_by));
 						$detail = $this->sales_model->getAllInvoiceItems($id);
 						
 						//  membuat judul pada colom detail

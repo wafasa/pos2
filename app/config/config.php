@@ -20,6 +20,7 @@ date_default_timezone_set('Asia/Jakarta');
 */
 $config['base_url'] = 'http://localhost/project/projects_erp/';
 $config['base_url'] = 'http://localhost:8088/data/pos2/';
+$config['base_url'] = 'http://localhost/project/pos2/';
 /*
 |--------------------------------------------------------------------------
 | Index File

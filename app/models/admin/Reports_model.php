@@ -14,6 +14,7 @@ class Reports_model extends CI_Model
             ->like('name', $term, 'both')->or_like('code', $term, 'both');
         $this->db->limit($limit);
         $q = $this->db->get('products');
+        echo $this->db->last_query();die;
         if ($q->num_rows() > 0) {
             foreach (($q->result()) as $row) {
                 $data[] = $row;
