@@ -1346,7 +1346,7 @@ class Reports extends MY_Controller
                 ->join('sale_items', 'sale_items.sale_id=sales.id', 'left')
                 ->join('warehouses', 'warehouses.id=sales.warehouse_id', 'left')
                 ->join('payments', 'payments.sale_id=sales.id', '')
-                // ->group_by('sales.id')
+                ->group_by('sale_items.id')
                 ->order_by('sales.date desc');
             // echo $this->db->last_query();die;
             if ($user) {
@@ -1420,6 +1420,7 @@ class Reports extends MY_Controller
                 $total = 0;
                 $paid = 0;
                 $balance = 0;
+                $totalQty = 0;
                 foreach ($data as $data_row) {
                     $this->excel->getActiveSheet()->SetCellValue('A' . $row, $this->sma->hrld($data_row->date));
                     $this->excel->getActiveSheet()->SetCellValue('B' . $row, $data_row->reference_no);
@@ -1436,13 +1437,15 @@ class Reports extends MY_Controller
                     $total += $data_row->grand_total;
                     $paid += $data_row->paid;
                     $balance += ($data_row->grand_total - $data_row->paid);
+                    $totalQty += $data_row->qty;
                     $row++;
                 }
                 $this->excel->getActiveSheet()->getStyle("F" . $row . ":H" . $row)->getBorders()
                     ->getTop()->setBorderStyle(PHPExcel_Style_Border::BORDER_MEDIUM);
                 $this->excel->getActiveSheet()->SetCellValue('F' . $row, $total);
-                $this->excel->getActiveSheet()->SetCellValue('G' . $row, $paid);
-                $this->excel->getActiveSheet()->SetCellValue('H' . $row, $balance);
+                $this->excel->getActiveSheet()->SetCellValue('G' . $row, $totalQty);
+                $this->excel->getActiveSheet()->SetCellValue('H' . $row, $paid);
+                $this->excel->getActiveSheet()->SetCellValue('I' . $row, $paid);
 
                 $this->excel->getActiveSheet()->getColumnDimension('A')->setWidth(20);
                 $this->excel->getActiveSheet()->getColumnDimension('B')->setWidth(20);
@@ -1503,7 +1506,7 @@ class Reports extends MY_Controller
 
         } else {
 
-            $si = "( SELECT sale_id, product_id, serial_no, 
+            $si = "( SELECT id,sale_id, product_id, serial_no, 
                 product_code,
                 {$this->db->dbprefix('sale_items')}.product_name as product_name,
                 {$this->db->dbprefix('sale_items')}.unit_price,
@@ -1573,6 +1576,7 @@ class Reports extends MY_Controller
                     $this->datatables->where('sales.order_tax_id !=', 1);
                 }
             }
+            $this->datatables->group_by("FSI.id");
             // echo $this->db->get();
             // echo $this->db->last_query();die;
 //            echo '<pre>';
@@ -1658,6 +1662,7 @@ class Reports extends MY_Controller
             }
 
             $q = $this->db->get();
+            // echo $this->db->last_query();die;
             if ($q->num_rows() > 0) {
                 foreach (($q->result()) as $row) {
                     $data[] = $row;
@@ -1737,7 +1742,8 @@ class Reports extends MY_Controller
             $si .= " GROUP BY {$this->db->dbprefix('sale_items')}.sale_id ) FSI";
             $this->load->library('datatables');
             $this->datatables
-                ->select("DATE_FORMAT(sma_sales.date, '%Y-%m-%d %T') as date, sma_sales.reference_no, sma_sales.biller, customer, FSI.item_nane as iname, grand_total, paid, (grand_total-paid) as balance, payment_status, {$this->db->dbprefix('sales')}.id as id, sma_payments.paid_by", FALSE)
+                ->select("DATE_FORMAT(sma_sales.date, '%Y-%m-%d %T') as date, sma_sales.reference_no, sma_sales.biller, customer, FSI.item_nane as iname, amount, amount as paid, 
+                            (amount-amount) as balance, payment_status, {$this->db->dbprefix('sales')}.id as id, sma_payments.paid_by", FALSE)
                 ->from('sales')
                 ->join($si, 'FSI.sale_id=sales.id', 'left')
                 ->join('warehouses', 'warehouses.id=sales.warehouse_id', 'left')
