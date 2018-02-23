@@ -2339,11 +2339,12 @@ class Reports extends MY_Controller
                     $this->excel->getActiveSheet()->SetCellValue('E' . $row, lang($data_row->paid_by));
                     $this->excel->getActiveSheet()->SetCellValue('F' . $row, $data_row->amount);
                     $this->excel->getActiveSheet()->SetCellValue('G' . $row, $data_row->type);
-                    if ($data_row->type == 'returned' || $data_row->type == 'sent') {
-                        $total -= $data_row->amount;
-                    } else {
-                        $total += $data_row->amount;
-                    }
+                    // if ($data_row->type == 'returned' || $data_row->type == 'sent') {
+                    //     $total -= $data_row->amount;
+                    // } else {
+                    //     $total += $data_row->amount;
+                    // }
+                    $total += $data_row->amount;
                     $row++;
                 }
                 $this->excel->getActiveSheet()->getStyle("F" . $row)->getBorders()

@@ -82,10 +82,11 @@ if ($this->input->post('end_date')) {
             "fnFooterCallback": function (nRow, aaData, iStart, iEnd, aiDisplay) {
                 var total = 0;
                 for (var i = 0; i < aaData.length; i++) {
-                    if (aaData[aiDisplay[i]][6] == 'sent' || aaData[aiDisplay[i]][6] == 'returned')
-                        total -= parseFloat(aaData[aiDisplay[i]][5]);
-                    else
-                        total += parseFloat(aaData[aiDisplay[i]][5]);
+                    // if (aaData[aiDisplay[i]][6] == 'sent' || aaData[aiDisplay[i]][6] == 'returned')
+                    //     total -= parseFloat(aaData[aiDisplay[i]][5]);
+                    // else
+                    //     total += parseFloat(aaData[aiDisplay[i]][5]);
+                    total += parseFloat(aaData[aiDisplay[i]][5]);
                 }
                 var nCells = nRow.getElementsByTagName('th');
                 nCells[5].innerHTML = currencyFormat(parseFloat(total));
