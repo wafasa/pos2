@@ -1,6 +1,15 @@
 var codes = "";
-
+function save_barcode(value){
+    $.ajax({
+        type: 'GET',
+        url: site.base_url +'pos/save_barcode/' + value,
+        success: function (response) {
+            return response;
+        }
+    });
+}
 $(document).ready(function() {
+
     console.log(localStorage.getItem("positems") !== "{}");
     if (localStorage.getItem("positems") !== "{}" && localStorage.getItem("positems") !== null) {
         $("#reset").prop('disabled', false);        
@@ -1255,7 +1264,11 @@ function loadItems() {
             } else {
                 if (pos_settings.item_order == 1 && print_cate) {
                     var bprTh = $('<tr></tr>');
-                    bprTh.html('<td colspan="100%" class="no-border"><strong>'+item.row.category_name+'</strong></td>');
+                    bprTh.html('<td colspan="100%" class="no-border"><strong>'+item.row.category_name+'</strong></td>'
+                                    +'<tr>'
+                                        +'<td colspan="2" class="no-border"><svg class="js-barcode" jsbarcode-format="code128" jsbarcode-displayValue="false" jsbarcode-value="'+item_code+'" jsbarcode-textmargin="0" jsbarcode-height="30" ></svg></td>'
+                                +'</tr>');
+
                     var oprTh = $('<tr></tr>');
                     oprTh.html('<td colspan="100%" class="no-border"><strong>'+item.row.category_name+'</strong></td>');
                     $("#order-table").append(oprTh);
@@ -1266,14 +1279,23 @@ function loadItems() {
                     bprTr += (comments[i] ? '<br> <b>*</b> <small>'+comments[i]+'</small>' : '');
                 }
                 bprTr += '</td></tr>';
-                bprTr += '<tr class="row_' + item_id + '" data-item-id="' + item_id + '"><td>(' + formatDecimal(item_qty) + ' x ' + (item_discount != 0 ? '<del>'+formatMoney(parseFloat(item_price) + parseFloat(pr_tax_val) + item_discount)+'</del>' : '') + formatMoney(parseFloat(item_price) + parseFloat(pr_tax_val))+ ')</td><td style="text-align:right;">'+ formatMoney(((parseFloat(item_price) + parseFloat(pr_tax_val)) * parseFloat(item_qty))) +'</td></tr>';
+                bprTr +=    '<tr>'
+                                +'<td colspan="2" class="no-border"><svg class="js-barcode" jsbarcode-format="code128" jsbarcode-displayValue="false" jsbarcode-value="'+item_code+'" jsbarcode-textmargin="0" jsbarcode-height="30" ></svg></td>'
+                            +'</tr>';
+                bprTr += '<tr class="row_' + item_id + '" data-item-id="' + item_id + '">'
+                            +'<td>(' + formatDecimal(item_qty) + ' x ' + (item_discount != 0 ? '<del>'+formatMoney(parseFloat(item_price) + parseFloat(pr_tax_val) + item_discount)+'</del>' : '') + formatMoney(parseFloat(item_price) + parseFloat(pr_tax_val))+ ')'
+                            +'</td>'
+                            +'<td style="text-align:right;">'+ formatMoney(((parseFloat(item_price) + parseFloat(pr_tax_val)) * parseFloat(item_qty))) +'</td>'
+                            +'</tr>';
                 var oprTr = '<tr class="row_' + item_id + '" data-item-id="' + item_id + '"><td>#'+(an-1)+' ' + item_code + " - " + item_name + '';
                 for (var i = 0, len = comments.length; i < len; i++) {
                     oprTr += (comments[i] ? '<br> <b>*</b> <small>'+comments[i]+'</small>' : '');
                 }
                 oprTr += '</td><td>[ ' + (item_ordered != 0 ? 'xxxx' : formatDecimal(item_qty)) +' ]</td></tr>';
                 $("#order-table").append(oprTr);
+                console.log(bprTr);
                 $("#bill-table").append(bprTr);
+                JsBarcode(".js-barcode").init();
             }
         });
         // Order level discount calculations

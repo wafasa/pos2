@@ -167,8 +167,11 @@
                                     $tax_summary[$row->tax_code]['rate'] = $row->tax_rate;
                                 }
                             }
-                            
+
                             echo '<tr><td colspan="2" class="no-border">#' . $r . ': &nbsp;&nbsp;' . product_name($row->product_name, ($printer ? $printer->char_per_line : 400)) . ($row->variant ? ' (' . $row->variant . ')' : '') . '<span class="pull-right">' . ($row->tax_code ? '*'.$row->tax_code : '') . '</span></td></tr>';
+                            echo '<tr>'
+                                    .'<td colspan="2" class="no-border">'.$this->sma->save_barcode($row->product_code, 'code128', 30, false).'</td>'
+                                 .'</tr>';
                             echo '<tr><td class="no-border border-bottom">' . $this->sma->formatQuantity($row->quantity) . ' x '.$this->sma->formatMoney($row->unit_price).'</td><td class="no-border border-bottom text-right">' . $this->sma->formatMoney($row->subtotal) . '</td></tr>';
 
                             $r++;

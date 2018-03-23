@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="<?=$assets?>pos/css/print.css" type="text/css" media="print"/>
     <script type="text/javascript" src="<?=$assets?>js/jquery-2.0.3.min.js"></script>
     <script type="text/javascript" src="<?=$assets?>js/jquery-migrate-1.2.1.min.js"></script>
+    <script type="text/javascript" src="<?= $assets ?>js/JsBarcode.all.min.js"></script>
     <!--[if lt IE 9]>
     <script src="<?=$assets?>js/jquery.js"></script>
     <![endif]-->
@@ -1140,6 +1141,7 @@
 <div id="order_tbl"><span id="order_span"></span>
     <table id="order-table" class="prT table table-striped" style="margin-bottom:0;" width="100%"></table>
 </div>
+<svg id="code128"></svg>
 <div id="bill_tbl"><span id="bill_span"></span>
     <table id="bill-table" width="100%" class="prT table table-striped" style="margin-bottom:0;"></table>
     <table id="bill-total-table" class="prT table" style="margin-bottom:0;" width="100%"></table>
@@ -1949,6 +1951,7 @@ var lang = {
             <?php if ($pos_settings->remote_printing != 1) { ?>
                 printBill();
             <?php } else { ?>
+                // console.log("asd");return;
                 Popup($('#bill_tbl').html());
             <?php } ?>
         });

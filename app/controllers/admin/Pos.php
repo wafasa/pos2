@@ -1532,6 +1532,36 @@ class Pos extends MY_Controller
         $this->load->view($this->theme . 'pos/view_bill', $this->data);
     }
 
+    public function save_barcode($text = null, $bcs = 'code128', $height = 56, $stext = 1, $get_be = false)
+    {
+        $drawText = ($stext != 1) ? false : true;
+        $this->load->library('zend');
+        $this->zend->load('Zend/Barcode');
+        $barcodeOptions = array('text' => $text, 'barHeight' => $height, 'drawText' => $drawText, 'factor' => ($get_be ? 2 : 1));
+        if ($this->Settings->barcode_img && $get_be) {
+            $rendererOptions = array('imageType' => 'jpg', 'horizontalPosition' => 'center', 'verticalPosition' => 'middle');
+            $imageResource = Zend_Barcode::draw($bcs, 'image', $barcodeOptions, $rendererOptions);
+            ob_start();
+            imagepng($imageResource);
+            $imagedata = ob_get_contents();
+            ob_end_clean();
+            if ($get_be) {
+                echo 'data:image/png;base64,'.base64_encode($imagedata);
+            }
+            echo "<img src='data:image/png;base64,".base64_encode($imagedata)."' alt='{$text}' class='bcimg' />";
+        } else {
+            $rendererOptions = array('renderer' => 'svg', 'horizontalPosition' => 'center', 'verticalPosition' => 'middle');
+            // $imageResource = Zend_Barcode::render($bcs, 'svg', $barcodeOptions, $rendererOptions);
+            // echo $imageResource;
+            ob_start();
+            Zend_Barcode::render($bcs, 'svg', $barcodeOptions, $rendererOptions);
+            $imagedata = ob_get_contents();
+            ob_end_clean();
+            echo "<img src='data:image/svg+xml;base64,".base64_encode($imagedata)."' alt='{$text}' class='bcimg' />";
+        }
+        echo FALSE;
+    }
+
     public function stripe_balance()
     {
         if (!$this->Owner) {
